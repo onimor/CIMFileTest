@@ -1,13 +1,9 @@
-﻿using CIM.PostgresModels;
-using CIM.Protos;
+﻿using CIM.Protos;
 using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace CIM.Backend

@@ -1,13 +1,6 @@
 ﻿@page "/Upload"
-@using BlazorDownloadFile
 @using CIM.Protos
-@using CIM.PostgresModels
 @using Grpc.Core
-@using Newtonsoft.Json;
-@using System.Linq.Dynamic.Core
-@using System.Collections
-
-@using Dialogs
 @using System.IO
 @using System.Net.Http.Headers
 @using System.Runtime
@@ -62,7 +55,6 @@
 @code
 {
 
-    [Inject] IBlazorDownloadFileService BlazorDownloadFileService { get; set; }
     private bool _isVisible;
     private const int _maxSize = 3 * 1024 * 1024;
     private byte[] _part = new byte[_maxSize];
