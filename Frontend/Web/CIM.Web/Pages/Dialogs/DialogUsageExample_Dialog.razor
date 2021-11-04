@@ -1,0 +1,13 @@
+﻿@inject IDialogService DialogService
+
+
+<MudButton @onclick="OpenDialog" Variant="Variant.Filled" Color="Color.Primary">
+    Открыть еще 1 диалог
+</MudButton>
+@code {
+
+    private void OpenDialog()
+    {
+        DialogService.Show<DialogUsageExample_Dialog>("Еще один диалог внутри диаалога");
+    }
+}

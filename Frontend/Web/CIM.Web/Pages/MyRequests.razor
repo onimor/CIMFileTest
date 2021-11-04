@@ -1,0 +1,178 @@
+﻿@page "/MyRequests"
+@using BlazorDownloadFile
+@using CIM.Protos
+@using CIM.PostgresModels
+@using Grpc.Core
+@using Newtonsoft.Json;
+@using System.Linq.Dynamic.Core
+@using System.Collections
+
+@using Dialogs
+@using System.IO
+@using System.Net.Http.Headers
+@using System.Runtime
+
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+
+<h3>MyRequests</h3>
+
+<InputFile id="fileInput" OnChange="UploadFiles" hidden multiple />
+
+<MudButton HtmlTag="label"
+           Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Filled.CloudUpload"
+           for="fileInput">
+    Upload Files
+</MudButton>
+
+<MudFab HtmlTag="label"
+        Color="Color.Secondary"
+        Icon="@Icons.Filled.Image"
+        Label="Load picture"
+        for="fileInput" />
+
+<MudFab HtmlTag="label"
+        Color="Color.Success"
+        Icon="@Icons.Filled.AttachFile"
+        for="fileInput" />
+
+<MudIconButton HtmlTag="label"
+               Color="Color.Info"
+               Icon="@Icons.Filled.PhotoCamera"
+               for="fileInput">
+</MudIconButton>
+
+@if (files != null)
+{
+    <MudText Typo="@Typo.h6">@files.Count() File@(files.Count() == 1 ? "" : "s"):</MudText>
+    <MudList>
+        @foreach (var file in files)
+        {
+            <MudListItem Icon="@Icons.Filled.AttachFile" @key="@file">
+                @file.Name <code>@file.Size bytes</code>
+                <MudProgressCircular Style="width:25px;height:25px;" Color="Color.Secondary" Indeterminate="@_isVisible" />
+            </MudListItem>
+        }
+    </MudList>
+    <input multiple="" type="file" _bl_2="">
+}
+
+@inject Greeter.GreeterClient GreeterClient
+@code
+{
+
+    [Inject] IBlazorDownloadFileService BlazorDownloadFileService { get; set; }
+    private bool _isVisible;
+    private const int _maxSize = 3 * 1024 * 1024;
+    private byte[] _part = new byte[_maxSize];
+    private FileRequest _fileRequest;
+    IList<IBrowserFile> files = new List<IBrowserFile>();
+    
+    private async void UploadFiles(InputFileChangeEventArgs e)
+    {
+        _isVisible = true;
+        foreach (var file in e.GetMultipleFiles())
+        {
+            files.Add(file);
+        }
+               
+        
+        foreach (var file in e.GetMultipleFiles())
+        {
+            try
+            {
+
+                using var call = GreeterClient.UploadFile();
+                ShowMessage($"Началась загрузка: {file.Name}",Severity.Normal);
+                using (var ms = file.OpenReadStream(file.Size))
+                {
+                    //var sblitDates = await FileHelper.Сonverter.SplitDataStream(ms, 3 * 1024 * 1024, ShowMessage);
+                    //ShowMessage(sblitDates.Count.ToString());
+                
+                    while (ms.Length - ms.Position > 0)
+                    {
+                        if (ms.Length - ms.Position <= _maxSize)
+                            _part = new byte[ms.Length - ms.Position];
+
+                        await ms.ReadAsync(_part, 0, _part.Length);
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        //отправка не сервер. Google.Protobuf.UnsafeByteOperations.UnsafeWrap Съедает оперативу. хотя он не копирует данные,
+                        //в отличии от обычного метода Google.Protobuf.ByteString.CopyFrom, который съедает примерно так же...
+                        _fileRequest = new FileRequest { FileName = file.Name, FileBytes = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(_part) };
+                        await call.RequestStream.WriteAsync(_fileRequest);
+                       
+                        //сохраняет на D:\123\ (CIM.Backend.Services.GreeterServices.DownloadFile) там указан путь. Сам метод тестовый, ужасный
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        _fileRequest = null; 
+                        
+                    }
+                    
+                    await ms.DisposeAsync();
+                }
+            
+                //GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                GC.Collect();
+                await call.RequestStream.CompleteAsync();
+                var response = await call;
+                var status = response.Status;
+                ShowMessage(status,Severity.Success);
+
+                call.Dispose();
+                files.Remove(file);
+                StateHasChanged();
+            }
+            catch(Exception ex)
+            {
+                files = new List<IBrowserFile>();
+                _isVisible = false;
+                ShowMessage(ex.Message, Severity.Error);
+            }
+            StateHasChanged();
+        }
+        _isVisible = false;
+        StateHasChanged();
+    }
+
+    private async void DownlaodFile(byte[] fileArr,string fileName)
+    {
+      
+        string contentType = "application/octet-stream";
+
+    // Check if the IJSRuntime is the WebAssembly implementation of the JSRuntime
+    if (JSRuntime is IJSUnmarshalledRuntime webAssemblyJSRuntime)
+    {
+        webAssemblyJSRuntime.InvokeUnmarshalled<string, string, byte[], bool>("BlazorDownloadFileFast", fileName, contentType, fileArr);
+    }
+    else
+    {
+        // Fall back to the slow method if not in WebAssembly
+        await JSRuntime.InvokeVoidAsync("BlazorDownloadFile", fileName, contentType, fileArr);
+    }
+    }
+    private void ShowMessage(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+            config.ShowCloseIcon = true;
+            config.VisibleStateDuration = 3000;
+            config.HideTransitionDuration = 500;
+            config.ShowTransitionDuration = 500;
+            config.SnackbarVariant = Variant.Outlined;
+        });
+    }
+    private void ShowMessage(string message)
+    {
+        Snackbar.Add(message, Severity.Warning, config =>
+        {
+            config.ShowCloseIcon = true;
+            config.ShowCloseIcon = true;
+            config.VisibleStateDuration = 3000;
+            config.HideTransitionDuration = 500;
+            config.ShowTransitionDuration = 500;
+            config.SnackbarVariant = Variant.Outlined;
+        });
+    }
+}

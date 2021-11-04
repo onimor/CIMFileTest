@@ -1,0 +1,75 @@
+﻿@page "/NewRequestst"
+@using CIM.Protos
+@using CIM.Web.Dto
+@using Grpc.Core
+<h3>NewRequestst</h3>
+<MudGrid>
+    @foreach (var file in files)
+    {
+        <MudItem Style="align-items:-5px" xs="12" md="6">
+            <div class="d-flex flex-column">
+                <MudPaper Class="my-0.1 pa-1 mud-theme-normal">
+                     <text>@file.Name</text>
+                     <MudIconButton @onclick=@(()=>DownLoadFile(file)) Icon="@Icons.Filled.FileDownload" Color="Color.Tertiary"/>
+                </MudPaper>
+            </div>
+        </MudItem>
+    }
+</MudGrid>
+
+@inject IJSRuntime JSRuntime
+@inject Greeter.GreeterClient GreeterClient
+@inject ISnackbar Snackbar
+@code {
+    List<FileDto> files = new();
+    private void ShowMessage(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+            config.ShowCloseIcon = true;
+            config.VisibleStateDuration = 3000;
+            config.HideTransitionDuration = 500;
+            config.ShowTransitionDuration = 500;
+            config.SnackbarVariant = Variant.Outlined;
+        });
+    }
+    private async void DownLoadFile(FileDto file)
+    {
+        using var serverStream = GreeterClient.DownloadFile(new FilesInfoRequest { FileName = file.Name, FilePath = file.Path });
+        var stream = serverStream.ResponseStream;
+        List<byte> byteArry = new();
+        await foreach (var item in stream.ReadAllAsync())
+        {
+            byteArry.AddRange(item.FileBytes);
+        }
+        DownlaodFile(byteArry.ToArray(), file.Name);
+    }
+    private async void DownlaodFile(byte[] fileArr,string fileName)
+    {
+      
+        string contentType = "application/octet-stream";
+
+    // Check if the IJSRuntime is the WebAssembly implementation of the JSRuntime
+    if (JSRuntime is IJSUnmarshalledRuntime webAssemblyJSRuntime)
+    {
+        webAssemblyJSRuntime.InvokeUnmarshalled<string, string, byte[], bool>("BlazorDownloadFileFast", fileName, contentType, fileArr);
+    }
+    else
+    {
+        // Fall back to the slow method if not in WebAssembly
+        await JSRuntime.InvokeVoidAsync("BlazorDownloadFile", fileName, contentType, fileArr);
+    }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        using var serverStream = GreeterClient.GetFilesInfo(new HelloRequest());
+        var stream = serverStream.ResponseStream;
+       
+        await foreach (var file in stream.ReadAllAsync())
+        {
+            files.Add(new FileDto { Name = file.FileName, Path = file.FilePath });
+        }
+        
+    }
+}
