@@ -14,8 +14,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Frontend\Web\CIM.Web\CIM.Web.csproj" />
-    <ProjectReference Include="..\..\Shared\CIM.PostgresModels\CIM.PostgresModels.csproj" />
     <ProjectReference Include="..\..\Shared\CIM.Protos\CIM.Protos.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\FileTest\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

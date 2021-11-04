@@ -20,52 +20,7 @@ namespace CIM.Backend
             _logger = logger;
         }
 
-        public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
-        {
-            return Task.FromResult(new HelloReply
-            {
-                Message = "Hello " + request.Name
-            });
-        }
-
-        public override async Task GetWeightLogs(
-            HelloRequest request,
-            IServerStreamWriter<HelloReply> responseStream,
-            ServerCallContext context)
-        {
-            var messages = new string[]
-            {
-                JsonConvert.SerializeObject(new RequestsEF{Id = 1, AddedByName = "Игорь" }),
-                JsonConvert.SerializeObject(new RequestsEF{Id = 2, AddedByName = "Крили" }),
-                JsonConvert.SerializeObject(new RequestsEF{Id = 3, AddedByName = "Крили" }),
-
-            };
-            foreach (var message in messages)
-            {
-                await responseStream.WriteAsync(new HelloReply
-                {
-                    Message = message
-                });
-            }
-
-            int index = 4;
-            while (!context.CancellationToken.IsCancellationRequested)
-            {
-                await responseStream.WriteAsync(new HelloReply
-                {
-                    Message = JsonConvert.SerializeObject(new RequestsEF { Id = index++, AddedByName = "Петр" })
-                });
-                await Task.Delay(2000, context.CancellationToken);
-            }
-
-        }
-        public byte[] addByteToArray(byte[] bArray, byte newByte)
-        {
-            byte[] newArray = new byte[bArray.Length + 1];
-            bArray.CopyTo(newArray, 1);
-            newArray[0] = newByte;
-            return newArray;
-        }
+       
         public override async Task<StatusRequest> UploadFile(IAsyncStreamReader<FileRequest> requestStream, ServerCallContext context)
         {
             List<byte> newFile = new();
@@ -84,7 +39,7 @@ namespace CIM.Backend
         }
         public override async Task GetFilesInfo(HelloRequest request, IServerStreamWriter<FilesInfoRequest> responseStream, ServerCallContext context)
         {
-            var dir = new DirectoryInfo(@"D:\123"); // папка с файлами 
+            var dir = new DirectoryInfo(@"Resources\FileTest"); // папка с файлами 
 
             foreach (FileInfo file in dir.GetFiles())
             {

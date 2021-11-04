@@ -7,8 +7,6 @@ package greet;
 // The greeting service definition.
 service Greeter {
   // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply);
-  rpc GetWeightLogs(HelloRequest) returns (stream HelloReply);
   rpc UploadFile(stream FileRequest) returns (StatusRequest);
   rpc DownloadFile(FilesInfoRequest) returns (stream FileRequest);
   rpc GetFilesInfo(HelloRequest) returns (stream FilesInfoRequest);
@@ -21,16 +19,6 @@ message HelloRequest {
 
 message StatusRequest {
   string Status = 1;
-}
-// The response message containing the greetings.
-message HelloReply {
-  string message = 1;
-}
-
-message ChunkMsg {
-    string FileName = 1;
-    int64 FileSize = 2;
-    bytes Chunk = 3;
 }
 
 message FileRequest {

@@ -17,8 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\CIM.FileHelper\CIM.FileHelper.csproj" />
-    <ProjectReference Include="..\..\..\Shared\CIM.PostgresModels\CIM.PostgresModels.csproj" />
     <ProjectReference Include="..\..\..\Shared\CIM.Protos\CIM.Protos.csproj" />
   </ItemGroup>
 
