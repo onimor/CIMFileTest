@@ -1,4 +1,4 @@
-﻿@page "/MyRequests"
+﻿@page "/Upload"
 @using BlazorDownloadFile
 @using CIM.Protos
 @using CIM.PostgresModels
@@ -15,7 +15,7 @@
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 
-<h3>MyRequests</h3>
+<h3>Upload</h3>
 
 <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple />
 
@@ -56,7 +56,6 @@
             </MudListItem>
         }
     </MudList>
-    <input multiple="" type="file" _bl_2="">
 }
 
 @inject Greeter.GreeterClient GreeterClient
@@ -88,38 +87,25 @@
                 ShowMessage($"Началась загрузка: {file.Name}",Severity.Normal);
                 using (var ms = file.OpenReadStream(file.Size))
                 {
-                    //var sblitDates = await FileHelper.Сonverter.SplitDataStream(ms, 3 * 1024 * 1024, ShowMessage);
-                    //ShowMessage(sblitDates.Count.ToString());
-                
                     while (ms.Length - ms.Position > 0)
                     {
                         if (ms.Length - ms.Position <= _maxSize)
                             _part = new byte[ms.Length - ms.Position];
 
                         await ms.ReadAsync(_part, 0, _part.Length);
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        //отправка не сервер. Google.Protobuf.UnsafeByteOperations.UnsafeWrap Съедает оперативу. хотя он не копирует данные,
-                        //в отличии от обычного метода Google.Protobuf.ByteString.CopyFrom, который съедает примерно так же...
+                       
                         _fileRequest = new FileRequest { FileName = file.Name, FileBytes = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(_part) };
                         await call.RequestStream.WriteAsync(_fileRequest);
-                       
-                        //сохраняет на D:\123\ (CIM.Backend.Services.GreeterServices.DownloadFile) там указан путь. Сам метод тестовый, ужасный
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        _fileRequest = null; 
-                        
+                        _fileRequest = null;
+
                     }
-                    
-                    await ms.DisposeAsync();
                 }
             
-                //GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-                GC.Collect();
                 await call.RequestStream.CompleteAsync();
                 var response = await call;
                 var status = response.Status;
                 ShowMessage(status,Severity.Success);
 
-                call.Dispose();
                 files.Remove(file);
                 StateHasChanged();
             }
