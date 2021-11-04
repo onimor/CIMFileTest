@@ -26,7 +26,7 @@ namespace CIM.Backend
                 fileName = b.FileName;
                 newFile.AddRange(b.FileBytes.ToByteArray());
             }
-            string filename = @$"D:\123\{fileName}";
+            string filename = @$"Resources\FileTest\{fileName}";
             File.WriteAllBytes(filename, newFile.ToArray());
             return await Task.FromResult(new StatusRequest
             {
