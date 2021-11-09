@@ -55,9 +55,7 @@
 @code
 {
 
-    //private const int _maxSize = 3 * 1024 * 1024;
-    //private byte[] _part = new byte[_maxSize];
-    //private FileRequest _fileRequest;
+
     private bool _isVisible;
     IList<IBrowserFile> files = new List<IBrowserFile>();
     
@@ -68,48 +66,14 @@
         {
             files.Add(file);
         }
-               
-        
+          
         foreach (var file in e.GetMultipleFiles())
         {
             try
             {
+                ShowMessage($"Началась загрузка: {file.Name}",Severity.Normal);
 
-                //using var call = GreeterClient.UploadFile();
-                 ShowMessage($"Началась загрузка: {file.Name}",Severity.Normal);
-                 using var content = new MultipartFormDataContent();
-
-                 var fileContent = new StreamContent(file.OpenReadStream(file.Size));
-                 fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-                 content.Add(
-                        content: fileContent,
-                        name: "\"files\"",
-                        fileName: file.Name); 
-
-                HttpClient httpClient = new();
-                httpClient.Timeout = TimeSpan.FromSeconds(300);
-                var response = await httpClient.PostAsync("https://localhost:5001/Filesave", content);
-
-                //using (var ms = file.OpenReadStream(file.Size))
-                //{
-                //    while (ms.Length - ms.Position > 0)
-                //    {
-                //        if (ms.Length - ms.Position <= _maxSize)
-                //            _part = new byte[ms.Length - ms.Position];
-
-                //        await ms.ReadAsync(_part, 0, _part.Length);
-                       
-                //        _fileRequest = new FileRequest { FileName = file.Name, FileBytes = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(_part) };
-                //        await call.RequestStream.WriteAsync(_fileRequest);
-                //        _fileRequest = null;
-
-                //    }
-                //}
-            
-                //await call.RequestStream.CompleteAsync();
-                //var response = await call;
-                //var status = response.Status;
-                //ShowMessage(status,Severity.Success);
+                await UploadFile(file); 
 
                 files.Remove(file);
                 StateHasChanged();
@@ -124,6 +88,47 @@
         }
         _isVisible = false;
         StateHasChanged();
+    }
+
+    private async Task UploadFile(IBrowserFile file)
+    {
+        using var content = new MultipartFormDataContent();
+        var fileContent = new StreamContent(file.OpenReadStream(file.Size));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+        content.Add(
+            content: fileContent,
+            name: "\"files\"",
+            fileName: file.Name);
+            
+            HttpClient httpClient = new();
+            httpClient.Timeout = TimeSpan.FromSeconds(300);
+            var response = await httpClient.PostAsync("https://localhost:5001/Filesave", content);
+    }
+     
+    private const int _maxSize = 3 * 1024 * 1024;
+    private byte[] _part = new byte[_maxSize];
+    private FileRequest _fileRequest;
+    private async Task UploadFileOld(IBrowserFile file)
+    {
+        using var call = GreeterClient.UploadFile();
+        using (var ms = file.OpenReadStream(file.Size))
+        {
+            while (ms.Length - ms.Position > 0)
+            {
+                if (ms.Length - ms.Position <= _maxSize)
+                _part = new byte[ms.Length - ms.Position];
+                await ms.ReadAsync(_part, 0, _part.Length);
+                
+                _fileRequest = new FileRequest { FileName = file.Name, FileBytes = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(_part) };
+                await call.RequestStream.WriteAsync(_fileRequest);
+                _fileRequest = null;
+            }
+         }
+
+         await call.RequestStream.CompleteAsync();
+         var response = await call;
+         var status = response.Status;
+         ShowMessage(status,Severity.Success);
     }
 
     private async void DownlaodFile(byte[] fileArr,string fileName)
